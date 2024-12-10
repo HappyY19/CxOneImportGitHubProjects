@@ -5,6 +5,7 @@ Prerequisites for the script, you need to set the following environment variable
     c. CX_ONE_SCANNERS: comma separated value, for example: sast,sca,apisec,kics
 
 """
+import traceback
 import os
 import logging
 import time
@@ -108,4 +109,5 @@ if __name__ == '__main__':
             )
         except ValueError:
             logger.error(f"Error during importing repo: {html_url}")
+            logger.error(f"traceback: {traceback.format_exc()}")
             continue
