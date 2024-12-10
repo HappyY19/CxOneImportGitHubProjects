@@ -107,5 +107,5 @@ if __name__ == '__main__':
                 master_branch=branch
             )
         except ValueError:
-            logger.error(f"Fail to import repo: {html_url}")
+            logger.error(f"Error during importing repo: {html_url}")
             continue
