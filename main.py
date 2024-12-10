@@ -1,10 +1,3 @@
-"""
-Prerequisites for the script, you need to set the following environment variables
-    a. GITHUB_ORG: your GitHub organization name, which is case-sensitive
-    b. GITHUB_TOKEN: your GitHub personal access token
-    c. CX_ONE_SCANNERS: comma separated value, for example: sast,sca,apisec,kics
-
-"""
 import traceback
 import os
 import logging
@@ -93,7 +86,7 @@ if __name__ == '__main__':
     logger.info(f"github organization: {github_org}")
     github_access_token = os.getenv("GITHUB_TOKEN")
     cx_one_scanners = [scanner.strip().strip("\"").strip("\'").lower()
-                       for scanner in os.getenv("CX_ONE_SCANNERS").split(",")]
+                       for scanner in os.getenv("CXONE_SCANNERS").split(",")]
     repos = get_github_repos_by_org(organization=github_org, access_token=github_access_token)
     for repo in repos:
         html_url = repo.html_url
