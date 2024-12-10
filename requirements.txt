@@ -1,0 +1,2 @@
+PyGithub==2.5.0
+CheckmarxPythonSDK==1.1.1
