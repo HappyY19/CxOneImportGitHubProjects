@@ -4,6 +4,7 @@ import logging
 import time
 from github import (Github, Auth)
 from CheckmarxPythonSDK.CxOne import (
+    get_a_list_of_projects,
     import_code_repository,
     retrieve_import_status,
 )
@@ -35,6 +36,35 @@ def get_github_repos_by_org(organization: str, access_token: str):
     g = Github(auth=auth)
     org = g.get_organization(organization)
     return org.get_repos()
+
+
+def extract_project_info_from_api_response(project_collection):
+    return [
+        {
+            "project_id": project.id,
+            "project_name": project.name,
+        }
+        for project in project_collection.projects
+    ]
+
+
+def get_projects() -> List[dict]:
+    projects = []
+    offset = 0
+    limit = 100
+    page = 1
+    project_collection = get_a_list_of_projects(offset=offset, limit=limit)
+    total_count = int(project_collection.totalCount)
+    projects.extend(extract_project_info_from_api_response(project_collection))
+    if total_count > limit:
+        while True:
+            offset = page * limit
+            if offset >= total_count:
+                break
+            project_collection = get_a_list_of_projects(offset=offset, limit=limit)
+            page += 1
+            projects.extend(extract_project_info_from_api_response(project_collection))
+    return projects
 
 
 def import_github_project_into_cx_one(
@@ -87,11 +117,17 @@ if __name__ == '__main__':
     github_access_token = os.getenv("GITHUB_TOKEN")
     cx_one_scanners = [scanner.strip().strip("\"").strip("\'").lower()
                        for scanner in os.getenv("CXONE_SCANNERS").split(",")]
+    project_list = get_projects()
+    project_name_list = [project.get("project_name") for project in project_list]
     repos = get_github_repos_by_org(organization=github_org, access_token=github_access_token)
     for repo in repos:
         html_url = repo.html_url
         branch = repo.default_branch
-        logger.info(f"processing github repo, url: {html_url}, default branch: {branch}")
+        org_repo_name = html_url.replace("https://github.com/", "")
+        if org_repo_name in project_name_list:
+            logger.info(f"repo {org_repo_name} already imported, ignore")
+            continue
+        logger.info(f"processing github repo, url: {html_url}, default branch: {branch}, project_name: {org_repo_name}")
         try:
             import_github_project_into_cx_one(
                 github_token=github_access_token,
@@ -103,4 +139,3 @@ if __name__ == '__main__':
         except ValueError:
             logger.error(f"Error during importing repo: {html_url}")
             logger.error(f"traceback: {traceback.format_exc()}")
-            continue
