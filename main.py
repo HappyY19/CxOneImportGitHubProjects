@@ -1,3 +1,4 @@
+import requests
 import traceback
 import os
 import logging
@@ -5,18 +6,9 @@ import time
 from github import (Github, Auth)
 from CheckmarxPythonSDK.CxOne import (
     get_a_list_of_projects,
-    import_code_repository,
-    retrieve_import_status,
 )
 from typing import List
-from CheckmarxPythonSDK.CxOne.dto import (
-    SCMImportInput,
-    Scm,
-    ScmOrganization,
-    ProjectSettings,
-    ScmProject,
-    Scanner,
-)
+
 
 # create logger
 logger = logging.getLogger(__name__)
@@ -27,6 +19,10 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 time_stamp_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+
+
+auth_code = "17bd08aa6f0dd611bc26"
+referer = "https://sng.ast.checkmarx.net/applicationsAndProjects/projects?tableConfig=%7B%22search%22%3A%7B%22text%22%3A%22%22%7D%2C%22sorting%22%3A%7B%22columnKey%22%3A%22lastScanDate%22%2C%22order%22%3A%22descend%22%7D%2C%22filters%22%3A%7B%22isDeployed%22%3A%5B%22All%22%5D%7D%2C%22pagination%22%3A%7B%22pageSize%22%3A25%2C%22currentPage%22%3A1%7D%2C%22grouping%22%3A%7B%22groups%22%3A%5B%5D%2C%22groupsState%22%3A%5B%5D%7D%7D"
 
 
 def get_github_repos_by_org(organization: str, access_token: str):
@@ -67,48 +63,71 @@ def get_projects() -> List[dict]:
     return projects
 
 
-def import_github_project_into_cx_one(
-        github_token: str,
-        organization: str,
-        scanners: List[str],
-        url: str,
-        master_branch: str
-):
-    scanner_list = []
-    for scanner in scanners:
-        if scanner.strip().lower() == "sast":
-            scanner_list.append(Scanner(scanner_type="sast", incremental=True))
-        if scanner.strip().lower() == "sca":
-            scanner_list.append(Scanner(scanner_type="sca", auto_pr_enabled=True))
-        else:
-            scanner_list.append(Scanner(scanner_type=scanner))
-    scm_import_input = SCMImportInput(
-        scm=Scm(token=github_token),
-        organization=ScmOrganization(org_identity=organization, monitor_for_new_projects=True),
-        default_project_settings=ProjectSettings(
-            web_hook_enabled=True,
-            decorate_pull_requests=True,
-            scanners=scanner_list
-        ),
-        scan_projects_after_import=True,
-        projects=[
-            ScmProject(
-                scm_repository_url=url,
-                protected_branches=[master_branch],
-                branch_to_scan_upon_creation=master_branch
-            )
-        ]
-    )
-    logger.info("finish prepare the request")
-    import_response = import_code_repository(scm_import_input)
-    process_id = import_response.get("processId")
-    logger.info(f"request send, processId: {process_id}")
-    process_percent = 0.0
-    while process_percent < 100.0:
-        status_response = retrieve_import_status(process_id=process_id)
-        process_percent = status_response.get("percentage")
-        logger.info(f"current status: {status_response}")
-        time.sleep(2)
+def async_import(github_org, auth_code, bearer_token, referer, repo_name, repo_full_name, repo_url, default_branch):
+    url = f"https://sng.ast.checkmarx.net/api/repos-manager/scms/1/orgs/{github_org}/asyncImport"
+    params = {
+        "authCode": f"{auth_code}",
+        "isUser": "false",
+        "isOrgWebhookEnabled": "true",
+        "createAstProject": "true",
+        "scanAstProject": "true"
+    }
+
+    headers = {
+        "accept": "*/*",
+        "accept-language": "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
+        "authorization": f"{bearer_token}",
+        "cache-control": "no-cache",
+        "content-type": "application/json",
+        "origin": "https://sng.ast.checkmarx.net",
+        "pragma": "no-cache",
+        "priority": "u=1, i",
+        "referer": f"{referer}",
+        "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Google Chrome";v="134"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+        "strict-transport-security": "max-age=31536000; includeSubDomains",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+        "webapp": "true"
+    }
+
+    data = {
+        "reposFromRequest": [
+            {
+                "isRepoAdmin": True,
+                "id": f"{repo_name}",
+                "name": f"{repo_full_name}",
+                "origin": "GITHUB",
+                "url": f"{repo_url}",
+                "branches": [
+                    {
+                        "name": f"{default_branch}",
+                        "isDefaultBranch": True
+                    }
+                ],
+                "kicsScannerEnabled": True,
+                "sastIncrementalScan": False,
+                "sastScannerEnabled": True,
+                "apiSecScannerEnabled": True,
+                "scaScannerEnabled": True,
+                "webhookEnabled": True,
+                "prDecorationEnabled": True,
+                "scaAutoPrEnabled": False,
+                "sshRepoUrl": f"git@github.com:{repo_full_name}.git",
+                "sshState": "SKIPPED",
+                "containerScannerEnabled": True,
+                "ossfSecoreCardScannerEnabled": True,
+                "secretsDerectionScannerEnabled": True
+            }
+        ],
+        "orgSshKey": "",
+        "orgSshState": "SKIPPED"
+    }
+    response = requests.post(url, params=params, headers=headers, json=data)
+    logger.info(f"status_code: {response.status_code}")
 
 
 if __name__ == '__main__':
@@ -119,6 +138,8 @@ if __name__ == '__main__':
                        for scanner in os.getenv("CXONE_SCANNERS").split(",")]
     project_list = get_projects()
     project_name_list = [project.get("project_name") for project in project_list]
+    from CheckmarxPythonSDK.utilities.httpRequests import auth_header
+    bearer_token = auth_header.get("Authorization")
     repos = get_github_repos_by_org(organization=github_org, access_token=github_access_token)
     for repo in repos:
         html_url = repo.html_url
@@ -129,13 +150,17 @@ if __name__ == '__main__':
             continue
         logger.info(f"processing github repo, url: {html_url}, default branch: {branch}, project_name: {org_repo_name}")
         try:
-            import_github_project_into_cx_one(
-                github_token=github_access_token,
-                organization=github_org,
-                scanners=cx_one_scanners,
-                url=html_url,
-                master_branch=branch
+            async_import(
+                github_org=github_org,
+                auth_code=auth_code,
+                bearer_token=bearer_token,
+                referer=referer,
+                repo_name=org_repo_name.split("/")[1],
+                repo_full_name=org_repo_name,
+                repo_url=html_url,
+                default_branch=branch,
             )
+            time.sleep(1)
         except ValueError:
             logger.error(f"Error during importing repo: {html_url}")
             logger.error(f"traceback: {traceback.format_exc()}")
