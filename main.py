@@ -141,6 +141,8 @@ def async_import(github_org, auth_code, bearer_token, referer, repo_chuncks, pro
         "orgSshKey": "",
         "orgSshState": "SKIPPED"
     }
+    if not repo_requests:
+        return -1
     response = requests.post(url, params=params, headers=headers, json=data, verify=False)
     logger.info(f"async import status_code: {response.status_code}")
     logger.info(f"async import request data: {data}")
@@ -192,10 +194,10 @@ if __name__ == '__main__':
     total_count = repos.totalCount
     logger.info(f"GitHub Org: {github_org}, repo total count: {total_count}")
     round_of_requests = total_count / chunk_size + 1
-    remainder = total_count % chunk_size
     round_i = 0
     while round_i < round_of_requests:
-        repo_chunks = repos[0 + round_i * chunk_size: (round_i + 1) * chunk_size]
+        repo_chunks = repos[round_i * chunk_size: (round_i + 1) * chunk_size]
+        round_i += 1
         response_status = async_import(
             github_org=github_org,
             auth_code=auth_code,
@@ -204,9 +206,11 @@ if __name__ == '__main__':
             repo_chuncks=repo_chunks,
             project_name_list=project_name_list
         )
+        if response_status == -1:
+            continue
         percentage = 0
         while percentage < 100:
             percentage = get_job_status(bearer_token)
             time.sleep(10)
         time.sleep(120)
-        round_i += 1
+
