@@ -20,5 +20,6 @@ Please use Python3!
 2. activate the virtual environment: 
    a. on Windows: .\.venv\Scripts\activate
    b. on Linux/MacOS: source .venv/bin/activate
-3. install the dependencies: pip install -r requirements.txt 
-4. run the python script: python main.py
+3. install the dependencies: pip install -r requirements.txt
+4. update the auto_code in main.py. Please find the auth_code from CxOne Portal developer tools.
+5. run the python script: python main.py
