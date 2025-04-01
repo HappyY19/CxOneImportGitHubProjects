@@ -6,11 +6,11 @@ This python script aims to import all GitHub repos from one GitHub Organization 
     a. GITHUB_ORG: your GitHub organization name, which is case-sensitive
     b. GITHUB_TOKEN: your GitHub personal access token
     c. CXONE_SCANNERS: comma separated value, for example: sast,sca,apisec,kics
-    d. cxone_access_control_url: Your cxone IAM url: https://sng.iam.checkmarx.net/
-    e. cxone_server: Your cxone server url, for example: https://sng.ast.checkmarx.net/
-    f. cxone_tenant_name: Your cxone tenant name
-    g. cxone_grant_type: refresh_token
-    h. cxone_refresh_token: Your CxOne API Key
+    d. CXONE_ACCESS_CONTROL_URL: Your cxone IAM url: https://sng.iam.checkmarx.net/
+    e. CXONE_SERVER: Your cxone server url, for example: https://sng.ast.checkmarx.net/
+    f. CXONE_TENANT_NAME: Your cxone tenant name
+    g. CXONE_GRANT_TYPE: refresh_token
+    h. CXONE_REFRESH_TOKEN: Your CxOne API Key
 
 ## Notice
 Please use Python3!
