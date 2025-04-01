@@ -1,4 +1,3 @@
-import requests
 import json
 import traceback
 import os
@@ -8,6 +7,9 @@ from github import (Github, Auth)
 from CheckmarxPythonSDK.CxOne import (
     get_a_list_of_projects,
 )
+from urllib3.util import Retry
+from requests import Session
+from requests.adapters import HTTPAdapter
 from typing import List
 
 
@@ -24,6 +26,17 @@ time_stamp_format = "%Y-%m-%dT%H:%M:%S.%fZ"
 chunk_size = 1
 auth_code = "17bd08aa6f0dd611bc26"
 referer = "https://sng.ast.checkmarx.net/applicationsAndProjects/projects?tableConfig=%7B%22search%22%3A%7B%22text%22%3A%22%22%7D%2C%22sorting%22%3A%7B%22columnKey%22%3A%22lastScanDate%22%2C%22order%22%3A%22descend%22%7D%2C%22filters%22%3A%7B%22isDeployed%22%3A%5B%22All%22%5D%7D%2C%22pagination%22%3A%7B%22pageSize%22%3A25%2C%22currentPage%22%3A1%7D%2C%22grouping%22%3A%7B%22groups%22%3A%5B%5D%2C%22groupsState%22%3A%5B%5D%7D%7D"
+
+
+s = Session()
+retries = Retry(
+    total=3,
+    backoff_factor=0.1,
+    status_forcelist=[502, 503, 504],
+    allowed_methods={'GET', 'POST'},
+)
+s.mount('https://', HTTPAdapter(max_retries=retries))
+s.mount('http://', HTTPAdapter(max_retries=retries))
 
 
 def get_github_repos_by_org(organization: str, access_token: str):
@@ -143,7 +156,7 @@ def async_import(github_org, auth_code, bearer_token, referer, repo_chuncks, pro
     }
     if not repo_requests:
         return -1
-    response = requests.post(url, params=params, headers=headers, json=data, verify=False)
+    response = s.post(url, params=params, headers=headers, json=data, verify=False)
     logger.info(f"async import status_code: {response.status_code}")
     logger.info(f"async import request data: {data}")
     logger.info(f"async import response message: {response.content}")
@@ -170,7 +183,7 @@ def get_job_status(bearer_token):
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
     }
 
-    response = requests.get(url, headers=headers, verify=False)
+    response = s.get(url, headers=headers, verify=False)
 
     # You can then work with the response
     logger.info(f"job_status, status_code: {response.status_code}")
