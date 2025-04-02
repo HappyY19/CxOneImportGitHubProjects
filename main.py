@@ -11,7 +11,7 @@ from urllib3.util import Retry
 from requests import Session
 from requests.adapters import HTTPAdapter
 from typing import List
-
+from requests.exceptions import ChunkedEncodingError
 
 # create logger
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ referer = "https://sng.ast.checkmarx.net/applicationsAndProjects/projects?tableC
 s = Session()
 retries = Retry(
     total=3,
-    backoff_factor=0.1,
+    backoff_factor=1,
     status_forcelist=[502, 503, 504],
     allowed_methods={'GET', 'POST'},
 )
@@ -138,7 +138,8 @@ def async_import(github_org, auth_code, bearer_token, referer, repo_chuncks, pro
         "sec-fetch-site": "same-origin",
         "strict-transport-security": "max-age=31536000; includeSubDomains",
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
-        "webapp": "true"
+        "webapp": "true",
+        'Accept-Encoding': 'identity',
     }
 
     repo_requests = []
@@ -180,7 +181,8 @@ def get_job_status(bearer_token):
         "sec-fetch-dest": "empty",
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-origin",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+        'Accept-Encoding': 'identity',
     }
 
     response = s.get(url, headers=headers, verify=False)
@@ -223,7 +225,11 @@ if __name__ == '__main__':
             continue
         percentage = 0
         while percentage < 100:
-            percentage = get_job_status(bearer_token)
-            time.sleep(10)
+            try:
+                percentage = get_job_status(bearer_token)
+                time.sleep(10)
+            except ChunkedEncodingError as e:
+                print(f"ChunkedEncodingError: {e}")
+                continue
         time.sleep(120)
 
