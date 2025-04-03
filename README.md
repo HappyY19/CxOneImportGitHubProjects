@@ -11,6 +11,11 @@ This python script aims to import all GitHub repos from one GitHub Organization 
     f. CXONE_TENANT_NAME: Your cxone tenant name
     g. CXONE_GRANT_TYPE: refresh_token
     h. CXONE_REFRESH_TOKEN: Your CxOne API Key
+    
+
+## Two ways to import  
+1. using the documented REST API : [/api/repos-manager/scm-projects](https://checkmarx.stoplight.io/docs/checkmarx-one-api-reference-guide/branches/main/5yefdw9pm675i-import-code-repository)
+2. using oauth code, and using an undocumented REST API:  /api/repos-manager/scms/1/orgs/{github_org}/asyncImport
 
 ## Notice
 Please use Python3!
