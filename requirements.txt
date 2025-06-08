@@ -1,2 +1,2 @@
-PyGithub==2.5.0
-CheckmarxPythonSDK==1.1.1
+CheckmarxPythonSDK==1.3.0
+python-dotenv==1.1.0
