@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 import os
 import logging
+load_dotenv("./ATT84439.env", override=True)
 from CheckmarxPythonSDK.CxOne import (
     batch_import_github_repo,
 )
@@ -8,7 +9,6 @@ from CheckmarxPythonSDK.CxOne import (
 logger = logging.getLogger("CheckmarxPythonSDK")
 
 if __name__ == '__main__':
-    load_dotenv()
     github_org = os.getenv("GITHUB_ORG")
     logger.info(f"github organization: {github_org}")
     github_access_token = os.getenv("GITHUB_TOKEN")
