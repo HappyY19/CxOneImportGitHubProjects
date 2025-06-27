@@ -11,6 +11,7 @@ This python script aims to import all GitHub repos from one GitHub Organization 
     f. CXONE_TENANT_NAME: Your cxone tenant name
     g. CXONE_GRANT_TYPE: refresh_token
     h. CXONE_REFRESH_TOKEN: Your CxOne API Key
+    i. GITHUB_TOKEN: github personal access token
     
 
 ## Two ways to import  
